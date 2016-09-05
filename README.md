@@ -1,6 +1,6 @@
 in the name of ALLAH
 
-### A collection of utilities, aliases, etc. in Scala;
+### A collection of utilities in Scala.
 
 
 ##### com.bisphone.util.Launcher
@@ -122,3 +122,7 @@ A trait to make exceptions cheaper :)
 #### And ...
 
 Check source code for more :)
+
+#### Use 
+You need 'testkit' that you can get it from: https://github.com/reza-samei/bisphone-testkit
+To use this you should publish it localy

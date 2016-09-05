@@ -20,4 +20,6 @@ libraryDependencies ++= Seq(
   // "com.typesafe" % "config" % "1.3.0"
 )
 
+libraryDependencies += "com.bisphone" %% "beta-testkit" % "0.1.0" % Test
+
 
