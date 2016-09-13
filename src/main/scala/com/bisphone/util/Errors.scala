@@ -6,7 +6,7 @@ package com.bisphone.util
 
 sealed trait Error
 
-trait SimpleError {
+trait SimpleError extends Error {
   def desc: String
   def cause: Option[Throwable]
 }
