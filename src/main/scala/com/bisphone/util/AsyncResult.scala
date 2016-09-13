@@ -22,7 +22,12 @@ class AsyncResultOps[L, R](val self: AsyncResult[L,R]) {
   ): AsyncResult[L,R2] = {
     val p = Promise[StdEither[L,R2]]
     self.underlay onComplete {
-      case StdSuccess(StdRight(value)) => p completeWith fn(value).asFuture
+      case StdSuccess(StdRight(value)) =>
+        try {
+          p completeWith fn(value).asFuture
+        } catch {
+          case NonFatal(cause) => p failure cause
+        }
       case StdSuccess(StdLeft(error)) => p success StdLeft(error)
       case StdFailure(cause) => p failure cause
     }
@@ -34,7 +39,12 @@ class AsyncResultOps[L, R](val self: AsyncResult[L,R]) {
   ): AsyncResult[L,R2] = {
     val p = Promise[StdEither[L,R2]]
     self.underlay onComplete {
-      case StdSuccess(StdRight(value)) => p success StdRight(fn(value))
+      case StdSuccess(StdRight(value)) =>
+        try {
+          p success StdRight(fn(value))
+        } catch {
+          case NonFatal(cause) => p failure cause
+        }
       case StdSuccess(StdLeft(error)) => p success StdLeft(error)
       case StdFailure(cause) => p failure cause
     }
@@ -47,7 +57,12 @@ class AsyncResultOps[L, R](val self: AsyncResult[L,R]) {
     val p = Promise[StdEither[L2, R]]
     self.underlay onComplete {
       case StdSuccess(StdRight(value)) => p success StdRight(value)
-      case StdSuccess(StdLeft(error)) => p completeWith fn(error).asFuture
+      case StdSuccess(StdLeft(error)) =>
+        try {
+          p completeWith fn(error).asFuture
+        } catch {
+          case NonFatal(cause) => p failure cause
+        }
       case StdFailure(cause) => p failure cause
     }
     new AsyncResult(p.future)
@@ -59,7 +74,12 @@ class AsyncResultOps[L, R](val self: AsyncResult[L,R]) {
     val p = Promise[StdEither[L2,R]]
     self.underlay onComplete {
       case StdSuccess(StdRight(value)) => p success StdRight(value)
-      case StdSuccess(StdLeft(error)) => p success StdLeft(fn(error))
+      case StdSuccess(StdLeft(error)) =>
+        try {
+          p success StdLeft(fn(error))
+        } catch {
+          case NonFatal(cause) => p failure cause
+        }
       case StdFailure(cause) => p failure cause
     }
     new AsyncResult(p.future)
@@ -72,7 +92,12 @@ class AsyncResultOps[L, R](val self: AsyncResult[L,R]) {
     self.underlay onComplete {
       case StdSuccess(StdRight(value)) => p success StdRight(value)
       case StdSuccess(StdLeft(error)) => p success StdLeft(error)
-      case StdFailure(NonFatal(cause)) if fn.isDefinedAt(cause) => p completeWith fn(cause).asFuture
+      case StdFailure(NonFatal(cause)) if fn.isDefinedAt(cause) =>
+        try {
+          p completeWith fn(cause).asFuture
+        } catch {
+          case NonFatal(cause) => p failure cause
+        }
       case StdFailure(cause) => p failure cause
     }
     new AsyncResult(p.future)
