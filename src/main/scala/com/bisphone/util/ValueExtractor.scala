@@ -10,6 +10,11 @@ import scala.concurrent.ExecutionContextExecutor
 
 sealed trait ExtractError extends SimpleError
 
+case class UnexpectedError(
+    override val desc: String,
+    override val cause: Option[Throwable]
+) extends ExtractError
+
 case class UndefinedKey(
   val name: String,
   override val desc: String,
