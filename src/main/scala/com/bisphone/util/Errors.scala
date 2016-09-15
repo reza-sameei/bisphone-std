@@ -4,7 +4,7 @@ package com.bisphone.util
   * @author Reza Samei <reza.samei.g@gmail.com>
   */
 
-sealed trait Error
+sealed trait Error extends Serializable
 
 trait SimpleError extends Error {
   def desc: String
