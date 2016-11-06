@@ -46,6 +46,8 @@ trait Predef extends Convertors {
   type StdLeft[+L,+R] = scala.util.Left[L,R]
   val StdLeft = scala.util.Left
 
+  val unit = ()
+
   // Accessros =============================================
   implicit def toStdFailureAccessors[T<:Throwable](value: T) = new com.bisphone.util.syntax.StdFailureAccessors(value)
   implicit def toStdSuccessAccessors[T](value: T) = new com.bisphone.util.syntax.StdSuccessAccessors(value)
