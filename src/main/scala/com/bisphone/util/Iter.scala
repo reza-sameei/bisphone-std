@@ -12,13 +12,15 @@ object Iter {
       if (origin.size <= limit) Iter(origin, None) else {
          var n = limit
          var ptr = origin
+         var last = ptr.head
          val list = mutable.ListBuffer.empty[T]
-         while(n >= 0) {
+         while(n > 0) {
             n -= 1
-            list += ptr.head
+            last = ptr.head
             ptr = ptr.tail
+            list += last
          }
-         Iter(list.toList, Some(fn(ptr.head)))
+         Iter(list.toList, Some(fn(last)))
       }
    }
 }
