@@ -53,7 +53,7 @@ object IntCodec {
   trait LittleEndianDecoder extends Decoder {
 
     def decodeInt(bytes: Iterator[Byte], len: Int): Int = {
-      val highestOctet = (len - 1) << 3
+      val highestOctet = (len - 1) << 3 // << 3 = * 8
       val Mask = ((1L << (len << 3)) - 1).toInt
       var count = len
       var decoded = 0

@@ -1,5 +1,7 @@
 package com.bisphone.util
 
+import java.nio.ByteBuffer
+
 /**
   * @author Reza Samei <reza.samei.g@gmail.com>
   */
@@ -61,19 +63,18 @@ object LongCodec {
   trait LittleEndianDecoder extends Decoder {
 
     def decodeLong(bytes: Iterator[Byte], len: Int): Long = {
-      val highestOctet: Long = ((len - 1) << 3).toLong // << 3 = * 8
-      val Mask: Long =
-        if (len % 8 == 0) Long.MaxValue
-        else ((1L << (len << 3)) - 1).toLong
+
+      val highestOctet = (len.toLong - 1) * 8
+      val Mask = if (len % 8 == 0) -1 else 1L << (len * 8)
       var count = len
       var decode: Long = 0l
+
       while (count > 0) {
         decode >>>= 8
-        val a = (bytes.next.toLong & 0xFF)
-        val b = a << highestOctet
-        decode += b
+        decode += (bytes.next.toLong & 0xFF) << highestOctet
         count -= 1
       }
+
       decode & Mask
     }
 
