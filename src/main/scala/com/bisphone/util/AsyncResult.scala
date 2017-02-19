@@ -15,6 +15,8 @@ final class AsyncResult[+L, +R](
   def asFuture: Future[StdEither[L,R]] = underlay
 }
 
+
+
 class AsyncResultOps[L, R](val self: AsyncResult[L,R]) {
 
   def flatMap[R2](fn: R => AsyncResult[L,R2])(
@@ -164,5 +166,4 @@ object AsyncResult {
     * }
     * `
     */
-
 }

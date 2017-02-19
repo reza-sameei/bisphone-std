@@ -124,11 +124,16 @@ abstract class SimpleLauncher(
     }
 
     rsl.asFuture onComplete {
-      case StdSuccess(StdRight(unit: Unit)) => sys.runtime.halt(0)
-      case StdSuccess(StdLeft(exitStatus)) => sys.runtime.halt(exitStatus.code)
+      case StdSuccess(StdRight(unit: Unit)) =>
+        logger println s"Exit: 0"
+        sys.runtime.halt(0)
+      case StdSuccess(StdLeft(exitStatus)) =>
+        logger println s"Exit: ${exitStatus}"
+        sys.runtime.halt(exitStatus.code)
       case StdFailure(cause) =>
-        logger println s"Error"
-        cause printStackTrace logger.asWriter
+        logger println s"Error(${cause.getClass.getName}): ${cause.getMessage}"
+        // cause printStackTrace logger.asWriter
+        cause.printStackTrace()
         sys.runtime.halt(ExitStatus.GeneralError.code)
     }
 
