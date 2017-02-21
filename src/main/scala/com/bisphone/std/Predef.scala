@@ -1,5 +1,6 @@
 package com.bisphone.std
 
+import com.bisphone.util.syntax.AnyOps
 import com.bisphone.util.{AsyncResult, AsyncResultOps, Convertors}
 
 import scala.language.implicitConversions
@@ -69,5 +70,11 @@ trait Predef extends Convertors {
   } catch {
     case NonFatal(cause:Throwable) => StdLeft(cause)
   }
+
+  // Util
+
+  implicit def toAnyOps[T](self: T) = new AnyOps(self)
+
+  def none[T]: Option[T] = None
 
 }
