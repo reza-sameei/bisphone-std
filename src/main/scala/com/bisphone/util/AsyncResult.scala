@@ -108,6 +108,10 @@ class AsyncResultOps[L, R](val self: AsyncResult[L,R]) {
   def swap(implicit ec: ExecutionContextExecutor): AsyncResult[R,L] =
     new AsyncResult(self.underlay map {_.swap})
 
+  def mergeAsFuture[T](fn: StdEither[L,R] => T)(
+      implicit ex: ExecutionContextExecutor
+  ): Future[T] = self.asFuture map fn
+
   def flatten[L2, R2](fn:L2 => L)(
     implicit ex: ExecutionContextExecutor,
     ev: R <:< AsyncResult[L2,R2]
@@ -126,8 +130,9 @@ class AsyncResultOps[L, R](val self: AsyncResult[L,R]) {
   }
 
   def flatten[R2](
-    implicit ex: ExecutionContextExecutor,
-    ev: R <:< AsyncResult[L,R2]
+      implicit
+      ex: ExecutionContextExecutor,
+      ev: R <:< AsyncResult[L,R2]
   ):AsyncResult[L, R2] = flatten[L,R2](i => i)
 
   def get(timeout: Duration): StdTry[StdEither[L,R]] =
@@ -137,6 +142,8 @@ class AsyncResultOps[L, R](val self: AsyncResult[L,R]) {
 
 
 object AsyncResult {
+
+  implicit def syntax$asyncResult[L,R](s: AsyncResult[L,R]) = new AsyncResultOps(s)
 
   // By value/ref
 
@@ -155,6 +162,40 @@ object AsyncResult {
   def lazyFuture[L,R](fn: => Future[StdEither[L,R]]): AsyncResult[L,R] = fromFuture(fn)
 
   def lazyEither[L,R](fn: => StdEither[L,R]): AsyncResult[L,R] = fromEither(fn)
+
+  def collectRight[L,R](list: Seq[AsyncResult[L,R]])(
+      implicit ece: ExecutionContextExecutor
+  ): AsyncResult[L, Seq[R]] = {
+
+    val rsl = (Future sequence list.map(_.asFuture)) map { is =>
+
+        val buf = scala.collection.mutable.Buffer.empty[R]
+
+        is.foldLeft(buf.stdright[L]) { (buf, i) => i match {
+          case StdLeft(value) => value.stdleft
+          case StdRight(value) => buf.map{ b => b append value; b}
+        }}.map(_.toList)
+    }
+
+    AsyncResult fromFuture rsl
+  }
+
+  def collectLeft[L,R](list: Seq[AsyncResult[L,R]])(
+      implicit ece: ExecutionContextExecutor
+  ): AsyncResult[Seq[L], R] = {
+
+    val rsl = (Future sequence list.map(_.asFuture)) map { is =>
+
+      val buf = scala.collection.mutable.Buffer.empty[L]
+
+      is.foldLeft(buf.stdleft[R]) { (buf, i) => i match {
+        case StdRight(value) => value.stdright
+        case StdLeft(value) => buf.leftMap{ b => b append value; b }
+      }}.leftMap(_.toList)
+    }
+
+    AsyncResult fromFuture rsl
+  }
 
   /**
     * Another way to implmentation: Using TypeTag with Call-By-Name ... How?!
