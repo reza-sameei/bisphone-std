@@ -47,7 +47,7 @@ trait TypeAndValue {
     type StdLeft[+L,+R] = scala.util.Left[L,R]
     val StdLeft = scala.util.Left
 
-    type StdFuture[T] = scala.concurrent.Future[T]
+    type StdFuture[+T] = scala.concurrent.Future[T]
     val StdFuture = scala.concurrent.Future
 
     type ExecutionContext = scala.concurrent.ExecutionContext

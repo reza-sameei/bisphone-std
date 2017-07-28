@@ -6,7 +6,8 @@ jvmTarget in ThisBuild := "1.8"
 
 val globe = Seq(
     organization := "com.bisphone",
-    scalaVersion := "2.11.11",
+    // scalaVersion := "2.11.11",
+    scalaVersion := "2.12.3",
     crossScalaVersions := Seq("2.11.11", "2.12.3"),
     fork := true,
     scalacOptions ++= Seq(

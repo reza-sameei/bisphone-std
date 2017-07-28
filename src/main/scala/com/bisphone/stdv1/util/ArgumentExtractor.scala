@@ -7,7 +7,6 @@ import scala.concurrent.ExecutionContext
   */
 trait ArgumentExtractor extends ValueExtractor {
     def firstOption[T](
-        implicit cnvt: Convertor[String, T],
-        executor: ExecutionContext
-    ): AsyncResult[ValueExtractor.Error, Option[T]]
+        implicit convertor: Convertor[String, T]
+    ): ValueExtractor.Result[Option[T]]
 }

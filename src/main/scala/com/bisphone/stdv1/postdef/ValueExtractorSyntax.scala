@@ -9,40 +9,37 @@ import scala.concurrent.ExecutionContext
   */
 trait ValueExtractorSyntax {
 
+    import ValueExtractor._
+
     def required[T](key: String)(
         implicit
         convertor: Convertor[String, T],
-        executor: ExecutionContext,
         extractor: ValueExtractor
-    ): AsyncResult[ValueExtractor.Error, T] = extractor required key
+    ): Result[T] = extractor required key
 
     def optional[T](key: String)(
         implicit
         convertor: Convertor[String, T],
-        executor: ExecutionContext,
         extractor: ValueExtractor
-    ): AsyncResult[ValueExtractor.Error, Option[T]] = extractor optional key
+    ): Result[Option[T]] = extractor optional key
 
     def nelist[T](key: String)(
         implicit
         convertor: Convertor[String, T],
-        executor: ExecutionContext,
         extractor: ValueExtractor
-    ): AsyncResult[ValueExtractor.Error, List[T]] = extractor nelist key
+    ): Result[List[T]] = extractor nelist key
 
     def list[T](key: String)(
         implicit
         convertor: Convertor[String, T],
-        executor: ExecutionContext,
         extractor: ValueExtractor
-    ): AsyncResult[ValueExtractor.Error, List[T]] = extractor list key
+    ): Result[List[T]] = extractor list key
 
     def firstOption[T](
         implicit
         convertor: Convertor[String, T],
-        executor: ExecutionContext,
         extractor: ArgumentExtractor
-    ): AsyncResult[ValueExtractor.Error, Option[T]] = extractor firstOption
+    ): Result[Option[T]] = extractor firstOption
 
 }
 

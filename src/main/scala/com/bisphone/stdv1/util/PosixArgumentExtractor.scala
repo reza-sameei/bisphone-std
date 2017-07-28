@@ -1,8 +1,8 @@
 package com.bisphone.stdv1.util
 
 import com.bisphone.stdv1.predef._
-import ValueExtractor.Error
-import ValueExtractor.Error._
+import ValueExtractor._
+import Error._
 
 /**
   * @author Reza Samei <reza.samei.g@gmail.com>
@@ -18,18 +18,17 @@ import ValueExtractor.Error._
   */
 class PosixArgumentExtractor(
     override val name: String,
+    val namespace: Option[String],
     data: Iterable[String]
 ) extends ArgumentExtractor with PosixArgumentExtractor.Util with Module {
 
     override val logger = loadLogger
 
-    logger.info(s"Init, data: ${data}")
+    logger.info(s"Init, Namespace: ${namespace}, data: ${data}")
 
     override def required[T](key: String)(
-        implicit
-        convertor: Convertor[String, T],
-        executor: ExecutionContext
-    ): AsyncResult[Error,T] = {
+        implicit convertor: Convertor[String, T]
+    ): Result[T] = returnKey(key) flatMap { key =>
         fold(data.iterator, FindKey((mkKey(key)))) { (st, item) =>
             st match {
                 case FindKey(impureKey) if item == impureKey =>
@@ -42,67 +41,83 @@ class PosixArgumentExtractor(
             }
         } match {
             case FinalValue(value) => convert[T](convertor, key, value)
-            case PeakValue(_) => AsyncResult left MissedValue(key, s"Missed value for key: '${key}'")
-            case FindKey(_) => AsyncResult left UndefinedKey(key, s"Undefined key: '${key}'")
-            case InternalError(error) => AsyncResult left error
+            case PeakValue(_) => MissedValue(key, s"Missed value for key: '${key}'").stdleft
+            case FindKey(_) => UndefinedKey(key, s"Undefined key: '${key}'").stdleft
+            case InternalError(error) => error.stdleft
         }
     }
+
+    override def required[T](namespace: String, fn: ValueExtractor => Result[T]): Result[T] =
+        returnNS(namespace) flatMap { ns =>
+            val inner = new PosixArgumentExtractor(s"${name}.inner", ns.some, data)
+            fn(inner)
+        }
 
     override def optional[T](key: String)(
-        implicit
-        convertor: Convertor[String, T],
-        executor: ExecutionContext
-    ): AsyncResult[Error,Option[T]] = {
+        implicit convertor: Convertor[String, T]
+    ): Result[Option[T]] = {
         required(key).map { _.some }.leftFlatMap {
-            case UndefinedKey(_, _) => AsyncResult right none[T]
-            case err => AsyncResult left err
+            case UndefinedKey(_, _) =>  none[T].stdright
+            case err => err.stdleft
         }
     }
 
+    override def optional[T](namesapce: String, fn: ValueExtractor => Result[Option[T]]) =
+        returnNS(namesapce) flatMap { ns =>
+            val inner = new PosixArgumentExtractor(s"${name}.inner", ns.some, data)
+            fn(inner)
+        }
+
     override def nelist[T](key: String)(
-        implicit
-        convertor: Convertor[String, T],
-        executor: ExecutionContext
-    ): AsyncResult[Error, List[T]] =
-        fold(data.iterator, FindKey(mkKey(key))) { (st, item)  => st match {
-            case FindKey(impureKey) if item == impureKey =>
-                MultipleValue(key, Nil)
-            case MultipleValue(_, Nil) if isKey(item) =>
-                InternalError(MissedValue(key, s"Missed value for '${key}'"))
-            case MultipleValue(key, Nil) =>
-                MultipleValue(key, item :: Nil)
-            case MultipleValue(_, list) if isKey(item) =>
-                FinalValues(list)
-            case MultipleValue(key, list) =>
-                MultipleValue(key, item :: list)
-            case _ => st
-        }} match {
-            case MultipleValue(_, Nil) => AsyncResult left MissedValue(key, s"Missed value for key: '${key}'")
-            case MultipleValue(_, list) => convertList(convertor, key, list.reverse)
-            case FinalValues(list) => convertList(convertor, key, list.reverse)
-            case FindKey(_) => AsyncResult left UndefinedKey(key, s"Undefined key: '${key}'")
-            case InternalError(error) => AsyncResult left error
+        implicit convertor: Convertor[String, T]
+    ): Result[List[T]] =
+        returnKey(key) flatMap { key =>
+            fold(data.iterator, FindKey(mkKey(key))) { (st, item) =>
+                st match {
+                    case FindKey(impureKey) if item == impureKey =>
+                        MultipleValue(key, Nil)
+                    case MultipleValue(_, Nil) if isKey(item) =>
+                        InternalError(MissedValue(key, s"Missed value for '${key}'"))
+                    case MultipleValue(key, Nil) =>
+                        MultipleValue(key, item :: Nil)
+                    case MultipleValue(_, list) if isKey(item) =>
+                        FinalValues(list)
+                    case MultipleValue(key, list) =>
+                        MultipleValue(key, item :: list)
+                    case _ => st
+                }
+            } match {
+                case MultipleValue(_, Nil) => MissedValue(key, s"Missed value for key: '${key}'").stdleft
+                case MultipleValue(_, list) => convertList(convertor, key, list.reverse)
+                case FinalValues(list) => convertList(convertor, key, list.reverse)
+                case FindKey(_) => UndefinedKey(key, s"Undefined key: '${key}'").stdleft
+                case InternalError(error) => error.stdleft
+            }
+        }
+
+    override def nelist[T](namespace: String, fn: ValueExtractor => Result[List[T]]) =
+        returnNS(namespace) flatMap { ns =>
+            // @todo How to Iterate ?! for Posix?!
+            Error.Unexpected(ns, s"Unsupported for '${getClass.getName}'", None).stdleft
         }
 
     override def list[T] (key: String)(
-        implicit
-        convertor: Convertor[String, T],
-        executor: ExecutionContext
-    ): AsyncResult[Error, List[T]] = {
+        implicit convertor: Convertor[String, T]
+    ): Result[List[T]] = {
         nelist(key).leftFlatMap{
-            case UndefinedKey(_,_) => AsyncResult right Nil
-            case err => AsyncResult left err
+            case UndefinedKey(_,_) => Nil.stdright
+            case err => err.stdleft
         }
     }
 
+    override def list[T](namespace: String, fn: ValueExtractor => Result[List[T]]) = nelist(namespace, fn)
+
     override def firstOption[T] (
-        implicit
-        convertor: Convertor[String, T],
-        executor: ExecutionContext
-    ): AsyncResult[Error, Option[T]] = {
+        implicit convertor: Convertor[String, T]
+    ): Result[Option[T]] = {
         data.headOption match {
-            case None => AsyncResult right none
-            case Some(v) if isKey(v) => AsyncResult right none
+            case None => none.stdright
+            case Some(v) if isKey(v) => none.stdright
             case Some(v) => convert[T](convertor, "Not a key; Just first value", v) map { i:T => Some(i) }
         }
     }
@@ -113,8 +128,13 @@ object PosixArgumentExtractor {
 
     trait Util { self: PosixArgumentExtractor =>
 
-        protected def mkKey(s: String) = "-" + s
-        protected def isKey(s: String) = s startsWith "-"
+        val prefix = namespace match {
+            case Some(ns) => s"-${ns.trim}."
+            case None => "-"
+        }
+
+        protected def mkKey(s: String) = prefix + s
+        protected def isKey(s: String) = s startsWith "-" // ?! s startsWith prefix
 
         protected sealed trait State { def break: Boolean }
         protected sealed trait Complete extends State { override val break = true }
@@ -135,14 +155,24 @@ object PosixArgumentExtractor {
             rsl
         }
 
+        protected def returnKey(key: String): ValueExtractor.Result[String] =
+            key.trim match {
+                case "" => Error.InvalidKey(key, s"Invalid Key: '${key}'").stdleft
+                case key => mkKey(key).stdright
+            }
+
+        protected def returnNS(ns: String): ValueExtractor.Result[String] =
+            ns.trim match {
+                case "" => Error.InvalidKey(ns, s"Invalid Namespace: '${ns}'").stdleft
+                case ns => ns.stdright
+            }
+
         protected def convert[T](
             convertor: Convertor[String, T],
             key: String,
             value: String
-        )(
-            implicit executor: ExecutionContext
-        ): AsyncResult[Error, T] = {
-            val rsl = catchNonFatal(convertor unsafe value) leftMap { thrown =>
+        ): ValueExtractor.Result[T] = {
+            catchNonFatal(convertor unsafe value) leftMap { thrown =>
 
                 logger.debug(s"Convert failure for single-value, Key:${key}, Value:${value}, Convertor:${convertor.title}", thrown)
 
@@ -151,19 +181,15 @@ object PosixArgumentExtractor {
                     convertor = convertor, origin = value, cause = Some(thrown)
                 )
             }
-
-            AsyncResult fromEither rsl
         }
 
         protected def convertList[T](
             convertor: Convertor[String, T],
             key: String,
             values: List[String]
-        )(
-            implicit executor: ExecutionContext
-        ): AsyncResult[Error, List[T]] = {
+        ): ValueExtractor.Result[List[T]] = {
             var lastValue: String = ""
-            val rsl = catchNonFatal(values map {i =>
+            catchNonFatal(values map {i =>
                 lastValue = i
                 convertor unsafe i
             }) leftMap { thrown =>
@@ -175,7 +201,6 @@ object PosixArgumentExtractor {
                     convertor = convertor, origin = lastValue, cause = Some(thrown)
                 )
             }
-            AsyncResult fromEither rsl
         }
 
     }

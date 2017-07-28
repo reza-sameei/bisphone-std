@@ -25,7 +25,7 @@ object CliLauncher {
 
         def runBy(args: Iterable[String]) = new Context(
             name,
-            new PosixArgumentExtractor(s"${name}.posix-argument-extractor",args.toList),
+            new PosixArgumentExtractor(s"${name}.posix-argument-extractor", None, args.toList),
             executionContext,
             tasks
         ).run
@@ -42,17 +42,22 @@ object CliLauncher {
 
         val index = tasks.map(i => i.props.key -> i).toMap
 
-        private[CliLauncher] def pickTask (args: ArgumentExtractor, tasks: Seq[Task]): AsyncResult[TaskResult.Unsuccessful, Task] =
-            args.firstOption[String].mapEither {
+        private[CliLauncher] def pickTask (args: ArgumentExtractor, tasks: Seq[Task]): AsyncResult[TaskResult.Unsuccessful, Task] = try {
+            val rsl = args.firstOption[String] match {
                 case StdRight(Some(name)) if index contains name => index(name).stdright
                 case StdRight(Some(name)) => TaskResult.Error(s"Undefined Task: ${name}").stdleft
                 case StdRight(None) => TaskResult.Error("Not Specified Task!").stdleft
             }
+            AsyncResult fromEither rsl
+        } catch {
+            case cause: Throwable => AsyncResult fromFailure cause
+        }
+
 
         private[CliLauncher] def extractTaskArgs (
             args: ArgumentExtractor, task: Task
         ): AsyncResult[TaskResult.Unsuccessful, Any] =
-            (task.extract apply flat).leftMap { err =>
+            AsyncResult fromEither (task.extract apply flat).leftMap { err =>
                 logger.error(s"Error in extraction: ${err}")
                 TaskResult.Error(err.desc)
             }

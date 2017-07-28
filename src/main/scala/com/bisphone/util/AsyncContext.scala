@@ -16,6 +16,6 @@ case class AsyncContext(
 
 object AsyncContext {
 
-  val defaultInf = AsyncContext(ExecutionContext.Implicits.global, Duration.Inf)
+  val defaultInf = AsyncContext(ExecutionContext.global, Duration.Inf)
 
 }

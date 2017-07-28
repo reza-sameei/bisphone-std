@@ -131,6 +131,6 @@ trait Task extends TaskSyntax {
     type In
     type Fn = LauncherContext.Flat => In => StdFuture[TaskResult]
     def props: TaskProps
-    def extract: LauncherContext.Flat => AsyncResult[ValueExtractor.Error, In]
+    def extract: LauncherContext.Flat => ValueExtractor.Result[In]
     def run: Fn
 }

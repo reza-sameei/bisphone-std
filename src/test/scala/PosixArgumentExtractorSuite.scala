@@ -12,7 +12,8 @@ import scala.concurrent.ExecutionContext
   */
 class PosixArgumentExtractorSuite extends FlatSpec with Matchers with ScalaFutures {
 
-  import ExecutionContext.Implicits.global
+  // import ExecutionContext.Implicits.global
+  implicit val ec = ExecutionContext.global
 
   val emptyList = new PosixArgumentExtractor(Nil)
 

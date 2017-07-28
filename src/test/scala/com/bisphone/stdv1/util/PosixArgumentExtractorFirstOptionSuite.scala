@@ -6,14 +6,14 @@ import com.bisphone.stdv1._
 /**
   * @author Reza Samei <reza.samei.g@gmail.com>
   */
-class PosixArgumentExtractorFirstOptionSuite extends AsyncResultFlastSpec with Matchers {
+class PosixArgumentExtractorFirstOptionSuite extends AsyncFlatSpec with Matchers with TestUtil {
 
     import Convertors._
     import com.bisphone.stdv1.postdef.ValueExtractorSyntax._
 
     it must "return error for firstOption in an empty data-list" in {
         val data = Nil
-        implicit val extractor = new PosixArgumentExtractor("1st", data)
+        implicit val extractor = new PosixArgumentExtractor("1st", None, data)
 
         firstOption[String].matchRight {
             case None => succeed
@@ -22,7 +22,7 @@ class PosixArgumentExtractorFirstOptionSuite extends AsyncResultFlastSpec with M
 
     it must "return first value for firstOption in a single-value data-list" in {
         val data = List("hello")
-        implicit val extractor = new PosixArgumentExtractor("2nd", data)
+        implicit val extractor = new PosixArgumentExtractor("2nd", None, data)
         firstOption[String].matchRight {
             case Some("hello") => succeed
         }
@@ -30,7 +30,7 @@ class PosixArgumentExtractorFirstOptionSuite extends AsyncResultFlastSpec with M
 
     it must "return first value for firstOption in a multi-value data-list" in {
         val data = List("1", "2", "3")
-        implicit val extractor = new PosixArgumentExtractor("3rd", data)
+        implicit val extractor = new PosixArgumentExtractor("3rd", None, data)
         firstOption[String].matchRight {
             case Some("1") => succeed
         }

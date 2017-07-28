@@ -41,13 +41,21 @@ object LauncherContext {
 
         override def reportFailure (cause: Throwable): Unit = ctx.executionContext.reportFailure(cause)
 
-        override def optional[T] (key: String)(implicit convertor: Convertor[String, T], executor: ExecutionContext): AsyncResult[ValueExtractor.Error, Option[T]] = ctx.extractor.optional(key)
+        override def required[T] (key: String)(implicit convertor: Convertor[String, T]): ValueExtractor.Result[T] = ctx.extractor.required(key)
 
-        override def required[T] (key: String)(implicit convertor: Convertor[String, T], executor: ExecutionContext): AsyncResult[ValueExtractor.Error, T] = ctx.extractor.required(key)
+        override def required[T](namespace: String, fn: ValueExtractor => ValueExtractor.Result[T]): ValueExtractor.Result[T] = ctx.extractor.required(namespace, fn)
 
-        override def list[T] (key: String)(implicit convertor: Convertor[String, T], executor: ExecutionContext): AsyncResult[ValueExtractor.Error, List[T]] = ctx.extractor.list(key)
+        override def optional[T] (key: String)(implicit convertor: Convertor[String, T]): ValueExtractor.Result[Option[T]] = ctx.extractor.optional(key)
 
-        override def nelist[T] (key: String)(implicit convertor: Convertor[String, T], executor: ExecutionContext): AsyncResult[ValueExtractor.Error, List[T]] = ctx.extractor.nelist(key)
+        override def optional[T](namespace: String, fn: ValueExtractor => ValueExtractor.Result[Option[T]]): ValueExtractor.Result[Option[T]] = ctx.extractor.optional(namespace, fn)
+
+        override def nelist[T] (key: String)(implicit convertor: Convertor[String, T]): ValueExtractor.Result[List[T]] = ctx.extractor.nelist(key)
+
+        override def nelist[T](namespace: String, fn: ValueExtractor => ValueExtractor.Result[List[T]]): ValueExtractor.Result[List[T]] = ctx.extractor.nelist(namespace, fn)
+
+        override def list[T] (key: String)(implicit convertor: Convertor[String, T]): ValueExtractor.Result[List[T]] = ctx.extractor.list(key)
+
+        override def list[T](namespace: String, fn: ValueExtractor => ValueExtractor.Result[List[T]]): ValueExtractor.Result[List[T]] = ctx.extractor.list(namespace, fn)
 
         override def logger: _root_.com.bisphone.stdv1.Logger = ctx.logger
 
