@@ -28,8 +28,8 @@ class PosixArgumentExtractor(
 
     override def required[T](key: String)(
         implicit convertor: Convertor[String, T]
-    ): Result[T] = returnKey(key) flatMap { key =>
-        fold(data.iterator, FindKey((mkKey(key)))) { (st, item) =>
+    ): Result[T] = returnKey(key) flatMap { impureKey =>
+        fold(data.iterator, FindKey((impureKey))) { (st, item) =>
             st match {
                 case FindKey(impureKey) if item == impureKey =>
                     PeakValue(key)
@@ -71,8 +71,8 @@ class PosixArgumentExtractor(
     override def nelist[T](key: String)(
         implicit convertor: Convertor[String, T]
     ): Result[List[T]] =
-        returnKey(key) flatMap { key =>
-            fold(data.iterator, FindKey(mkKey(key))) { (st, item) =>
+        returnKey(key) flatMap { impureKey =>
+            fold(data.iterator, FindKey(impureKey)) { (st, item) =>
                 st match {
                     case FindKey(impureKey) if item == impureKey =>
                         MultipleValue(key, Nil)
