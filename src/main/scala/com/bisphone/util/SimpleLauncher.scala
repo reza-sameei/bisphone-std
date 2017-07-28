@@ -137,7 +137,7 @@ abstract class SimpleLauncher(
         sys.runtime.halt(ExitStatus.GeneralError.code)
     }
 
-    try Await.ready(rsl.asFuture, asyncContext.timeout) catch {
+    val _ = try Await.ready(rsl.asFuture, asyncContext.timeout) catch {
       case cause: Throwable =>
         logger println s"End with error: ${cause.getClass.getName}: ${cause.getMessage}"
         cause printStackTrace logger.asWriter

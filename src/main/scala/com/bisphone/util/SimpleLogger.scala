@@ -6,7 +6,7 @@ import java.io.PrintWriter
   * @author Reza Samei <reza.samei.g@gmail.com>
   */
 trait SimpleLogger {
-  def println(str: String)
+  def println(str: String): Unit
   def asWriter: PrintWriter
 }
 
