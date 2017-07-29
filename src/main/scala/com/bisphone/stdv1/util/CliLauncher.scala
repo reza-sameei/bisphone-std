@@ -5,7 +5,16 @@ import com.bisphone.stdv1.predef._
 import Convertors._
 
 /**
+  * {{{
+  * object Main extends CliLauncher("board-manager", Httup("httpup") :: SARF("rpc") :: Nil)
+  * }}}
   */
+class CliLauncher(name: String, tasks: Seq[Task]) {
+
+    def main(args: Array[String]): Unit = CliLauncher(name, ExecutionContext.global)(tasks).runBy(args)
+
+}
+
 object CliLauncher {
 
     def apply(
