@@ -1,7 +1,6 @@
 package com.bisphone.util
 
 import com.bisphone.std._
-
 import scala.concurrent.ExecutionContextExecutor
 
 /**
@@ -19,6 +18,10 @@ class PosixArgumentExtractor(
   private sealed trait InComplete extends State  { override val break = false }
   private final case class Error(error: ExtractError) extends State  { override val break = true }
 
+  // @todo: fix the warning "The outer reference in this type test cannot be checked at run time."
+  // Scala 2.12.3 will show this warning!
+  // @readAbout: https://stackoverflow.com/questions/16450008/typesafe-swing-events-the-outer-reference-in-this-type-test-cannot-be-checked-a
+
   private final case class FindKey(val key: String) extends InComplete
   private final case class PeakValue(val key: String) extends InComplete
   private final case class MultipleValue(val key: String, val value: List[String]) extends InComplete
@@ -27,7 +30,7 @@ class PosixArgumentExtractor(
   private final case class FinalValues(val list: List[String]) extends Complete
   private final case object NoValue extends Complete
 
-  private def fold[T](itr: Iterator[String], init: State)(f: (State, String) => State) = {
+  private def fold(itr: Iterator[String], init: State)(f: (State, String) => State) = {
     var rsl = init
     while(itr.hasNext && !rsl.break) rsl = f(rsl, itr.next)
     rsl
@@ -74,8 +77,9 @@ class PosixArgumentExtractor(
   override def optional[T](key: String)(
     implicit cnvt: Convertor[String, T],
     executor: ExecutionContextExecutor
-  ): AsyncResult[ExtractError,Option[T]] =
-    fold(data.iterator, FindKey((mkKey(key)))) { (st, item) => st match {
+  ): AsyncResult[ExtractError,Option[T]] = {
+
+    val rsl = fold(data.iterator, FindKey((mkKey(key)))) { (st, item) => st match {
       case FindKey(impureKey) if item == impureKey =>
         PeakValue(key)
       case PeakValue(impureKey) if isKey(item) =>
@@ -83,36 +87,43 @@ class PosixArgumentExtractor(
       case PeakValue(impureKey) =>
         FinalValue(item)
       case _ => st
-    }} match {
-      case FinalValue(value) => convert[T](cnvt, key, value) map { i:T => Some(i)}
+    }}
+
+    (rsl: @unchecked) match {
+      case FinalValue(value) => convert[T](cnvt, key, value) map { i: T => Some(i) }
       case PeakValue(_) => AsyncResult left MissedValue(key, s"The '${key}' needs a value", None)
       case FindKey(_) => None.asyncRight
       case Error(error) => error.asyncLeft
     }
+  }
 
   override def list[T](key: String)(
     implicit cnvt: Convertor[String, T],
     executor: ExecutionContextExecutor
-  ): AsyncResult[ExtractError, List[T]] =
-    fold(data.iterator, FindKey(mkKey(key))) { (st, item) => st match {
-      case FindKey(impureKey) if item == impureKey =>
-        MultipleValue(key, Nil)
-      case MultipleValue(_, Nil) if isKey(item) =>
-        Error(MissedValue(key, s"Missed value for '${key}'"))
-      case MultipleValue(key, Nil) =>
-        MultipleValue(key, item :: Nil)
-      case MultipleValue(_, list) if isKey(item) =>
-        FinalValues(list)
-      case MultipleValue(key, list) =>
-        MultipleValue(key, item :: list)
-      case _ => st
-    }} match {
-      case MultipleValue(_, Nil) => MissedValue(key, s"MissedValue for '${key}'",None).asyncLeft
+  ): AsyncResult[ExtractError, List[T]] = {
+    val rsl = fold(data.iterator, FindKey(mkKey(key))) { (st, item) =>
+      st match {
+        case FindKey(impureKey) if item == impureKey =>
+          MultipleValue(key, Nil)
+        case MultipleValue(_, Nil) if isKey(item) =>
+          Error(MissedValue(key, s"Missed value for '${key}'"))
+        case MultipleValue(key, Nil) =>
+          MultipleValue(key, item :: Nil)
+        case MultipleValue(_, list) if isKey(item) =>
+          FinalValues(list)
+        case MultipleValue(key, list) =>
+          MultipleValue(key, item :: list)
+        case _ => st
+      }
+    }
+    (rsl: @unchecked) match {
+      case MultipleValue(_, Nil) => MissedValue(key, s"MissedValue for '${key}'", None).asyncLeft
       case MultipleValue(_, list) => convertList(cnvt, key, list.reverse)
       case FinalValues(list) => convertList(cnvt, key, list.reverse)
       case FindKey(_) => Nil.asyncRight
       case Error(error) => error.asyncLeft
     }
+  }
 
   def firstOption[T](
     implicit cnvt: Convertor[String, T],

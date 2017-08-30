@@ -4,22 +4,22 @@ organization := "com.bisphone"
 
 name := "std"
 
-version := "0.10.1-SNAPSHOT"
+version := "0.11.0"
 
-scalaVersion := "2.11.8"
+scalaVersion := "2.11.11"
 
-scalacOptions ++= Seq("-feature", "-deprecation", "-language:postfixOps")
+crossScalaVersions := Seq("2.11.11", "2.12.3")
+
+scalacOptions ++= Seq(
+    "-feature",
+    "-deprecation",
+    "-unchecked",
+    "-language:postfixOps",
+    "-language:implicitConversions"
+)
 
 fork := true
 
-def akka(artifact: String, version:String = "2.4.4") = "com.typesafe.akka" %% artifact % version
-
-def testkit = Seq("org.scalatest" %% "scalatest" % "2.2.6" % Test)
-
-libraryDependencies ++= Seq(
-  // "com.typesafe" % "config" % "1.3.0"
-)
-
-libraryDependencies += "com.bisphone" %% "beta-testkit" % "0.1.0" % Test
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % Test
 
 
