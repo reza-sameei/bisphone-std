@@ -8,7 +8,7 @@ version := "0.11.0"
 
 scalaVersion := "2.11.11"
 
-crossScalaVersions := Seq("2.11.11", "2.12.3")
+crossScalaVersions := Seq("2.11.11", "2.12.4")
 
 scalacOptions ++= Seq(
     "-feature",
@@ -20,6 +20,7 @@ scalacOptions ++= Seq(
 
 fork := true
 
+libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.7.2"
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % Test
 
 

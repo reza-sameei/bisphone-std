@@ -30,7 +30,7 @@ import scala.util.control.NonFatal
   *     task("say-hello", for{
   *       name <- args.required[String]("name")
   *     } yield name) { name =>
-  *       logger println "Hello ${name}"
+  *       logger println "Hello \${name}"
   *       success
   *     }
   *
