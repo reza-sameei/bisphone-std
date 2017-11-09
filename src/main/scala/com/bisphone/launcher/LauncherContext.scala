@@ -16,7 +16,7 @@ trait LauncherContext extends RuntimeContext with Module { self =>
 
     def valueExtractor: ValueExtractor
 
-    final protected def flat() = new LauncherContext.Flat(self)
+    final def flat() = new LauncherContext.Flat(self)
 
 }
 
