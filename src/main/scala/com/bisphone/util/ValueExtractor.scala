@@ -53,7 +53,7 @@ trait ValueExtractor {
     ): ValueExtractor.Result[T] =
         optional[T](key).flatMap { i: Option[T] =>
             i match {
-                case None => UndefinedKey(key, s"Undefined key '${key}'}").asyncLeft
+                case None => UndefinedKey(key, s"Undefined key '${key}'").asyncLeft
                 case Some(value) => value.asyncRight[ExtractError]
             }
         }
