@@ -5,7 +5,9 @@ sealed trait ReliabilityState { def from: Long }
 
 object ReliabilityState {
 
-    final case class Bootstramp (from: Long) extends ReliabilityState {
+    def apply(time: Long): ReliabilityState = Bootstrap(time)
+
+    final case class Bootstrap private[ReliabilityState] (from: Long) extends ReliabilityState {
         def toRed(time: Long = System.currentTimeMillis()): ReliabilityState = Red(time, this)
         def toYellow(time: Long = System.currentTimeMillis()): ReliabilityState  = Yellow(time, this)
         def toGreen(time: Long = System.currentTimeMillis()) : ReliabilityState = Green(time, this)
