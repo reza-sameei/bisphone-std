@@ -4,7 +4,7 @@ organization := "com.bisphone"
 
 name := "std"
 
-version := "0.13.0-SNAPSHOT"
+version := "0.13.0"
 
 scalaVersion := "2.11.11"
 
