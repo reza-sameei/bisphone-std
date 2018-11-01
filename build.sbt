@@ -4,11 +4,11 @@ organization := "com.bisphone"
 
 name := "std"
 
-version := "0.13.0"
+version := "0.13.1"
 
-scalaVersion := "2.11.11"
+scalaVersion := "2.11.12"
 
-crossScalaVersions := Seq("2.11.11", "2.12.5")
+crossScalaVersions := Seq("2.11.12", "2.12.6")
 
 scalacOptions ++= Seq(
     "-feature",
@@ -21,6 +21,6 @@ scalacOptions ++= Seq(
 fork := true
 
 libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.7.2"
-libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % Test
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.5" % Test
 
 

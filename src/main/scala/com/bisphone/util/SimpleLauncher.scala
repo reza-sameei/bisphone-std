@@ -83,13 +83,20 @@ abstract class SimpleLauncher(
       val p = Promise[StdEither[ExitStatus.UnsuccessStatus,Unit]]
 
       config.asFuture.onComplete {
+
         case StdSuccess(StdRight(value)) =>
-          p completeWith task(value).asFuture
+          try { p completeWith task(value).asFuture } catch {
+            case cause: Throwable => p failure cause
+          }
         case StdSuccess(StdLeft(error)) =>
           logger println s"Configuration error: ${error.desc}"
-          if (error.cause.isDefined) error.cause.get printStackTrace logger.asWriter
+          if (error.cause.isDefined) {
+            error.cause.get printStackTrace logger.asWriter
+          }
           p success ExitStatus.ConfigurationError.stdleft
-        case StdFailure(cause) => p failure cause
+
+        case StdFailure(cause) =>
+          p failure cause
       }
 
       AsyncResult fromFuture p.future
@@ -106,13 +113,19 @@ abstract class SimpleLauncher(
     fn: T => TaskResult
   ): Unit = tasks(command) = new FeaturedTask[T](config, fn)
 
-  def run(): Unit = {
+  def run(): Unit = try {
+
+    logger.println("RUN ...")
+
+    logger.println("First Step ...")
 
     val firstStep: AsyncResult[ExitStatus.UnsuccessStatus, Option[String]] =
       args.firstOption[String].leftMap { error: SimpleError =>
         logger println s"Unexpected error in reading 'command': ${error.desc}"
         ExitStatus.GeneralError
       }
+
+    logger.println("Second Step ...")
 
     val rsl = firstStep.flatMap {
       case None => default()
@@ -123,25 +136,27 @@ abstract class SimpleLauncher(
         ExitStatus.UsageError.asyncLeft
     }
 
-    rsl.asFuture onComplete {
-      case StdSuccess(StdRight(unit: Unit)) =>
-        logger println s"Exit: 0"
-        sys.runtime.halt(0)
-      case StdSuccess(StdLeft(exitStatus)) =>
-        logger println s"Exit: ${exitStatus}"
-        sys.runtime.halt(exitStatus.code)
-      case StdFailure(cause) =>
-        logger println s"Error(${cause.getClass.getName}): ${cause.getMessage}"
-        // cause printStackTrace logger.asWriter
-        cause.printStackTrace()
-        sys.runtime.halt(ExitStatus.GeneralError.code)
+    logger.println("WAITING !")
+
+    Try { Await.result(rsl.asFuture, asyncContext.timeout) } match {
+        case StdSuccess(StdRight(unit: Unit)) =>
+            logger println s"Exit: 0"
+            sys.runtime.halt(0)
+        case StdSuccess(StdLeft(exitStatus)) =>
+            logger println s"Exit: ${exitStatus}"
+            sys.runtime.halt(exitStatus.code)
+        case StdFailure(cause) =>
+            logger println s"Error(${cause.getClass.getName}): ${cause.getMessage}"
+            cause printStackTrace logger.asWriter
+            sys.runtime.halt(ExitStatus.GeneralError.code)
     }
 
-    try Await.ready(rsl.asFuture, asyncContext.timeout) catch {
-      case cause: Throwable =>
-        logger println s"End with error: ${cause.getClass.getName}: ${cause.getMessage}"
-        cause printStackTrace logger.asWriter
-    }
+  } catch {
+    case cause: Throwable =>
+      logger println s"End with error: ${cause.getClass.getName}: ${cause.getMessage}"
+      logger.println("NOT EXPECTED !!")
+      cause printStackTrace logger.asWriter
+      sys.runtime.halt(ExitStatus.GeneralError.code)
   }
 
   // utilities

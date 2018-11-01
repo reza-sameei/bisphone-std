@@ -26,17 +26,22 @@ final class AsyncResultOps[L, R](val self: AsyncResult[L, R]) {
     def flatMap[R2](fn: R => AsyncResult[L, R2])(
         implicit ec: ExecutionContextExecutor
     ): AsyncResult[L, R2] = {
+
         val p = Promise[StdEither[L, R2]]
+
         self.underlay onComplete {
             case StdSuccess(StdRight(value)) =>
-                try {
-                    p completeWith fn(value).asFuture
-                } catch {
-                    case NonFatal(cause) => p failure cause
+                try { p completeWith fn(value).asFuture } catch {
+                    case cause: Throwable => p failure cause
                 }
-            case StdSuccess(StdLeft(error)) => p success StdLeft(error)
-            case StdFailure(cause) => p failure cause
+
+            case StdSuccess(StdLeft(error)) =>
+                p success StdLeft(error)
+
+            case StdFailure(cause) =>
+                p failure cause
         }
+
         new AsyncResult(p.future)
     }
 
